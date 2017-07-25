@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+<head>
+<title>Translucent Brain</title>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0'>
+<style>
+#container {
+	background-color: #bbb;
+	width:640px;
+	height:640px;
+}
+</style>
+</head>
+
+<body>
+<div id='info'>
+	<div class='controls'>
+		<input type='file' id='file' name='files[]'/><br />
+		<input type='checkbox' id='showBrain' value='checked'/> Show brain<br />
+		<table>
+		<tr>
+		<td>
+            Isosurface level: <br />
+            Resolution:<br />
+            Vertex count:<br />
+            Face count:<br />
+		</td>
+		<td>
+		    <input type='range' id='level'/><span id='levelValue'></span><br />
+			<span id='resolution'>0</span><br />
+			<span id='vertcount'>0</span><br />
+			<span id='facecount'>0</span><br />
+		</td>
+		</tr>
+		</table>
+	</div>
+</div>
+<div id='container' width='640px' height='640px'></div>
+
+<script src='translucent-cluster.js'></script>
+<script>
+
+translucentCluster.init('container')
+.then(function(){
+    updateStats();
+
+    // Configure file upload
+    $('#file').on('change', handleFileSelect);
+    $('#level').on('input', handleLevelChange);
+    $('#showBrain').on('change', toggleBrain);
+
+    $('#level').val(0.06*100);
+    $('#showBrain').attr({checked: true});
+});
+
+function toggleBrain() {
+    if(translucentCluster.brain) {
+        translucentCluster.brain.visible = !translucentCluster.brain.visible;
+    }        
+}
+
+function handleFileSelect(evt) {
+    var file = evt.target.files[0];
+    MRI.loadMRIFromFile(file)
+    .then(function() {
+        translucentCluster.cmap={data:MRI.mri.data, dims:MRI.mri.dim, level:0.06};
+        translucentCluster.updateMesh(translucentCluster.cmap);
+        translucentCluster.flagDataLoaded=true;
+        updateStats();
+    });
+}
+
+function handleLevelChange(e) {
+    var level=$('#level').val()/100;
+    translucentCluster.cmap.level=parseFloat(level);
+    translucentCluster.updateMesh(translucentCluster.cmap);
+    $('#levelValue').text(level);
+    updateStats();
+}
+
+function updateStats() {
+    //Update statistics
+    $('#resolution').text(
+      translucentCluster.cmap.dims[0] + 'x'
+      + translucentCluster.cmap.dims[1] + 'x'
+      + translucentCluster.cmap.dims[2]
+    )
+    $('#vertcount').text(translucentCluster.cluster.vertices.length);
+    $('#facecount').text(translucentCluster.cluster.faces.length);
+}
+
+</script>
+
+</body>
+</html>
