@@ -261,6 +261,7 @@ var translucentCluster = {
     init: function init(elemId) {
         var me=translucentCluster;
         var pr=new Promise(function(resolve, reject) {
+            /*
             me.loadScript('http://localhost/libs/jquery/1.10.2/jquery.min.js',function(){return window.jQuery!=undefined})
             .then(function(){return me.loadScript('http://localhost/libs/three.js/66/three.min.js')},function(){return window.THREE!=undefined})
             .then(function(){return me.loadScript('http://localhost/libs/three.js/66/SubdivisionModifier.js')},function(){return window.THREE.SubdivisionModifier!=undefined})
@@ -269,7 +270,7 @@ var translucentCluster = {
             .then(function(){return me.loadScript('http://localhost/libs/pako/0.2.5/pako.min.js')},function(){return window.pako!=undefined})
             .then(function(){return me.loadScript('http://localhost/structjs/struct.js')},function(){return window.Struct!=undefined})
             .then(function(){return me.loadScript('http://localhost/mrijs/mri.js')},function(){return window.MRI!=undefined})
-            /*
+            */
             me.loadScript('https://cdnjs.cloudflare.com/ajax/libs/jquery/1.10.2/jquery.min.js',function(){return window.jQuery!=undefined})
             .then(function(){return me.loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/74/three.min.js')},function(){return window.THREE!=undefined})
             .then(function(){return me.loadScript('https://cdn.rawgit.com/mrdoob/three.js/r74/examples/js/modifiers/SubdivisionModifier.js')},function(){return window.THREE.SubdivisionModifier!=undefined})
@@ -278,7 +279,6 @@ var translucentCluster = {
             .then(function(){return me.loadScript('https://cdnjs.cloudflare.com/ajax/libs/pako/1.0.5/pako.min.js')},function(){return window.pako!=undefined})
             .then(function(){return me.loadScript('https://cdn.rawgit.com/r03ert0/structjs/v0.0.1/struct.js')},function(){return window.Struct!=undefined})
             .then(function(){return me.loadScript('https://cdn.rawgit.com/r03ert0/mrijs/v0.0.2/mri.js')},function(){return window.MRI!=undefined})
-            */
             .then(function(){
                 // initialise surface nets
                 me.configureCubeEdges();
@@ -307,6 +307,7 @@ var translucentCluster = {
 
                 // add a trackball camera contol
                 me.cameraControls	= new THREE.TrackballControls( me.camera, document.getElementById('container') )
+                me.cameraControls.rotateSpeed=10;
 
                 // add the translucent brain mesh
                 var oReq = new XMLHttpRequest();
