@@ -6,14 +6,14 @@ var translucentCluster = {
     },
     flagDataLoaded: null,
     brain: null,
-    createTestData: function createTestData(path) {
+    createTestData: async function createTestData(path) {
         var me=translucentCluster;
-        MRI.loadMRIFromPath(path)
-        .then(function () {
-            me.cmap={data:MRI.mri.data, dims:MRI.mri.dim, level:0.06};
-            me.updateMesh(me.cmap);
-            me.flagDataLoaded=true;
-        });
+        var m = new MRI();
+        await m.init();
+        await m.loadMRIFromPath(path);
+        me.cmap={data:m.data, dims:m.dim, level:0.06};
+        me.updateMesh(me.cmap);
+        me.flagDataLoaded=true;
     },
     cube_edges: new Int32Array(24),
     edge_table: new Int32Array(256),
@@ -137,10 +137,12 @@ var translucentCluster = {
     surfacemesh:null,
     updateMesh: function updateMesh(field) {
         var me=translucentCluster;
-        me.scene.remove( me.surfacemesh );
+        if(typeof me.surfacemesh !== 'undefined') {
+            me.scene.remove( me.surfacemesh );
+        }
 
         //Create surface mesh
-        me.cluster	= new THREE.Geometry();
+        me.cluster = new THREE.Geometry();
 
         var start = (new Date()).getTime();
         var result = me.SurfaceNets(field.data,field.dims,field.level);
@@ -151,7 +153,7 @@ var translucentCluster = {
 
         for(var i=0; i<result.vertices.length; ++i) {
             var v = result.vertices[i];
-            var	z=0.5;
+            var z=0.5;
             me.cluster.vertices.push(new THREE.Vector3(v[0]*z, v[1]*z, v[2]*z));
         }
 
@@ -197,39 +199,39 @@ var translucentCluster = {
         // toon shader
         var material = new THREE.ShaderMaterial({
             uniforms: { 
-                coeficient	: {type	: 'f', value: 1.0},
-                power		: {type	: 'f', value: 2},
-                glowColor	: {type	: 'c', value: new THREE.Color('black')},
-                glowColor2	: {type	: 'c', value: new THREE.Color('red')},
+                coeficient: {type: 'f', value: 1.0},
+                power: {type: 'f', value: 2},
+                glowColor: {type: 'c', value: new THREE.Color('black')},
+                glowColor2: {type: 'c', value: new THREE.Color('red')},
             },
-            vertexShader	: [ 'varying vec3	vVertexWorldPosition;',
-                                'varying vec3	vVertexNormal;',
+            vertexShader: [ 'varying vec3 vVertexWorldPosition;',
+                                'varying vec3 vVertexNormal;',
                                 'void main(){',
-                                '	vVertexNormal	= normalize(normalMatrix * normal);',
-                                '	vVertexWorldPosition	= (modelMatrix * vec4(position, 1.0)).xyz;',
-                                '	gl_Position	= projectionMatrix * modelViewMatrix * vec4(position, 1.0);',
+                                '  vVertexNormal = normalize(normalMatrix * normal);',
+                                '  vVertexWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;',
+                                '  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);',
                                 '}',
                                 ].join('\n'),
-            fragmentShader	: [ 'uniform vec3	glowColor;',
-                                'uniform vec3	glowColor2;',
-                                'uniform float	coeficient;',
-                                'uniform float	power;',
-                                'varying vec3	vVertexNormal;',
-                                'varying vec3	vVertexWorldPosition;',
-                                'varying vec4	vFragColor;',
+            fragmentShader: [ 'uniform vec3 glowColor;',
+                                'uniform vec3 glowColor2;',
+                                'uniform float coeficient;',
+                                'uniform float power;',
+                                'varying vec3 vVertexNormal;',
+                                'varying vec3 vVertexWorldPosition;',
+                                'varying vec4 vFragColor;',
                                 'void main(){',
-                                '	vec3 worldCameraToVertex= vVertexWorldPosition - cameraPosition;',
-                                '	vec3 viewCameraToVertex	= (viewMatrix * vec4(worldCameraToVertex, 0.0)).xyz;',
-                                '	viewCameraToVertex	= normalize(viewCameraToVertex);',
-                                '	float intensity		= pow(coeficient + dot(vVertexNormal, viewCameraToVertex), power);',
+                                '  vec3 worldCameraToVertex= vVertexWorldPosition - cameraPosition;',
+                                '  vec3 viewCameraToVertex = (viewMatrix * vec4(worldCameraToVertex, 0.0)).xyz;',
+                                '  viewCameraToVertex = normalize(viewCameraToVertex);',
+                                '  float intensity = pow(coeficient + dot(vVertexNormal, viewCameraToVertex), power);',
                                 '   intensity=(intensity>0.33)?((intensity>0.66)?1.0:0.33):0.0;',
-                                '	gl_FragColor		= vec4(glowColor*(intensity)+glowColor2*(1.0-intensity), 1.0);',
+                                '  gl_FragColor = vec4(glowColor*(intensity)+glowColor2*(1.0-intensity), 1.0);',
                                 '}',
                             ].join('\n')
         });
         me.surfacemesh=new THREE.Mesh( me.cluster, material );
         me.scene.add( me.surfacemesh );
-        
+
         // hack
         me.surfacemesh.position.x = -field.dims[0]/4.0;
         me.surfacemesh.position.y = -field.dims[1]/4.0;
@@ -258,19 +260,18 @@ var translucentCluster = {
         return pr;
     },
     // init the scene
-    init: function init(elemId) {
+    init: async function init(elemId) {
         var me=translucentCluster;
         var pr=new Promise(function(resolve, reject) {
-            /*
             me.loadScript('http://localhost/libs/jquery/1.10.2/jquery.min.js',function(){return window.jQuery!=undefined})
-            .then(function(){return me.loadScript('http://localhost/libs/three.js/66/three.min.js')},function(){return window.THREE!=undefined})
-            .then(function(){return me.loadScript('http://localhost/libs/three.js/66/SubdivisionModifier.js')},function(){return window.THREE.SubdivisionModifier!=undefined})
-            .then(function(){return me.loadScript('http://localhost/libs/three.js/66/TrackballControls.js')},function(){return window.THREE.TrackballControls!=undefined})
-            .then(function(){return me.loadScript('http://localhost/libs/three.js/66/PLYLoader.js')},function(){return window.THREE.PLYLoader!=undefined})
+            .then(function(){return me.loadScript('http://localhost/libs/three.js/98/three.min.js')},function(){return window.THREE!=undefined})
+            .then(function(){return me.loadScript('http://localhost/libs/three.js/98/SubdivisionModifier.js')},function(){return window.THREE.SubdivisionModifier!=undefined})
+            .then(function(){return me.loadScript('http://localhost/libs/three.js/98/TrackballControls.js')},function(){return window.THREE.TrackballControls!=undefined})
+            .then(function(){return me.loadScript('http://localhost/libs/three.js/98/PLYLoader.js')},function(){return window.THREE.PLYLoader!=undefined})
             .then(function(){return me.loadScript('http://localhost/libs/pako/0.2.5/pako.min.js')},function(){return window.pako!=undefined})
             .then(function(){return me.loadScript('http://localhost/structjs/struct.js')},function(){return window.Struct!=undefined})
             .then(function(){return me.loadScript('http://localhost/mrijs/mri.js')},function(){return window.MRI!=undefined})
-            */
+            /*
             me.loadScript('https://cdnjs.cloudflare.com/ajax/libs/jquery/1.10.2/jquery.min.js',function(){return window.jQuery!=undefined})
             .then(function(){return me.loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/74/three.min.js')},function(){return window.THREE!=undefined})
             .then(function(){return me.loadScript('https://cdn.rawgit.com/mrdoob/three.js/r74/examples/js/modifiers/SubdivisionModifier.js')},function(){return window.THREE.SubdivisionModifier!=undefined})
@@ -279,18 +280,14 @@ var translucentCluster = {
             .then(function(){return me.loadScript('https://cdnjs.cloudflare.com/ajax/libs/pako/1.0.5/pako.min.js')},function(){return window.pako!=undefined})
             .then(function(){return me.loadScript('https://cdn.rawgit.com/r03ert0/structjs/v0.0.1/struct.js')},function(){return window.Struct!=undefined})
             .then(function(){return me.loadScript('https://cdn.rawgit.com/r03ert0/mrijs/v0.0.2/mri.js')},function(){return window.MRI!=undefined})
-            .then(function(){
-                // initialise surface nets
-                me.configureCubeEdges();
-    
-                // add test data
-                me.createTestData('demo-data/1.average-phir.nii.gz');
-
+            */
+            .then(async () => {
                 // init renderer
                 me.renderer = new THREE.WebGLRenderer({
-                    antialias				: true,	// to get smoother output
-                    preserveDrawingBuffer	: true	// to allow screenshot
+                    antialias: true, // to get smoother output
+                    preserveDrawingBuffer: true // to allow screenshot
                 });
+                me.renderer.setPixelRatio( window.devicePixelRatio );
                 me.renderer.setClearColor( 0xffffff, 1 );
                 var width=$('#'+elemId).width();
                 var height=$('#'+elemId).height();
@@ -301,13 +298,19 @@ var translucentCluster = {
                 me.scene = new THREE.Scene();
 
                 // add a camera to the scene
-                me.camera	= new THREE.PerspectiveCamera(35, width / height,10, 100 );
+                me.camera = new THREE.PerspectiveCamera(35, width / height,10, 100 );
                 me.camera.position.set(0, 0, 40);
                 me.scene.add(me.camera);
 
                 // add a trackball camera contol
-                me.cameraControls	= new THREE.TrackballControls( me.camera, document.getElementById('container') )
+                me.cameraControls = new THREE.TrackballControls( me.camera, document.getElementById('container') )
                 me.cameraControls.rotateSpeed=10;
+
+                // initialise surface nets
+                me.configureCubeEdges();
+
+                // add test data
+                await me.createTestData('demo-data/1.average-phir.nii.gz');
 
                 // add the translucent brain mesh
                 var oReq = new XMLHttpRequest();
@@ -315,7 +318,9 @@ var translucentCluster = {
                 oReq.responseType='text';
                 oReq.onload = function(oEvent) {
                     var tmp=this.response;
-                    var geometry=new THREE.PLYLoader().parse(tmp);
+                    var buffergeometry=new THREE.PLYLoader().parse(tmp);
+                    var geometry = new THREE.Geometry().fromBufferGeometry(buffergeometry);
+                    geometry.mergeVertices();
                     geometry.sourceType = 'ply';
 
                     geometry.computeFaceNormals();
@@ -324,38 +329,38 @@ var translucentCluster = {
                     // translucent shader
                     var material = new THREE.ShaderMaterial({
                         uniforms: { 
-                            coeficient	: {type	: 'f', value: 1.0},
-                            power		: {type	: 'f', value: 2},
-                            glowColor	: {type	: 'c', value: new THREE.Color('black')},
+                            coeficient: {type: 'f', value: 1.0},
+                            power: {type: 'f', value: 2},
+                            glowColor: {type: 'c', value: new THREE.Color('black')},
                         },
-                        vertexShader	: [ 'varying vec3	vVertexWorldPosition;',
-                                            'varying vec3	vVertexNormal;',
+                        vertexShader: [ 'varying vec3 vVertexWorldPosition;',
+                                            'varying vec3 vVertexNormal;',
                                             'void main(){',
-                                            '  vVertexNormal	= normalize(normalMatrix * normal);',
-                                            '  vVertexWorldPosition	= (modelMatrix * vec4(position, 1.0)).xyz;',
-                                            '  gl_Position	= projectionMatrix * modelViewMatrix * vec4(position, 1.0);',
+                                            '  vVertexNormal = normalize(normalMatrix * normal);',
+                                            '  vVertexWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;',
+                                            '  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);',
                                             '}',
                                             ].join('\n'),
-                        fragmentShader	: [ 'uniform vec3	glowColor;',
-                                            'uniform float	coeficient;',
-                                            'uniform float	power;',
-                                            'varying vec3	vVertexNormal;',
-                                            'varying vec3	vVertexWorldPosition;',
-                                            'varying vec4	vFragColor;',
+                        fragmentShader: [ 'uniform vec3 glowColor;',
+                                            'uniform float coeficient;',
+                                            'uniform float power;',
+                                            'varying vec3 vVertexNormal;',
+                                            'varying vec3 vVertexWorldPosition;',
+                                            'varying vec4 vFragColor;',
                                             'void main(){',
                                             '  vec3 worldCameraToVertex= vVertexWorldPosition - cameraPosition;',
-                                            '  vec3 viewCameraToVertex	= (viewMatrix * vec4(worldCameraToVertex, 0.0)).xyz;',
-                                            '  viewCameraToVertex	= normalize(viewCameraToVertex);',
-                                            '  float intensity		= pow(coeficient+dot(vVertexNormal, viewCameraToVertex), power);',
-                                            '  gl_FragColor		= vec4(glowColor*intensity, intensity);',
+                                            '  vec3 viewCameraToVertex = (viewMatrix * vec4(worldCameraToVertex, 0.0)).xyz;',
+                                            '  viewCameraToVertex = normalize(viewCameraToVertex);',
+                                            '  float intensity = pow(coeficient+dot(vVertexNormal, viewCameraToVertex), power);',
+                                            '  gl_FragColor = vec4(glowColor*intensity, intensity);',
                                             '}',
                                         ].join('\n'),
-                        transparent	: true,
-                        depthWrite	: false,
+                        transparent: true,
+                        depthWrite: false,
                     });
                     var modifier = new THREE.SubdivisionModifier(1);
-                    modifier.modify(geometry);
-        
+                    geometry = modifier.modify(geometry);
+
                     // hack
                     for(var i=0;i<geometry.vertices.length;i++)
                     {
@@ -365,12 +370,12 @@ var translucentCluster = {
                         geometry.vertices[i].y+=3;
                         geometry.vertices[i].z-=2;
                     }
-    
+
                     me.brain=new THREE.Mesh(geometry,material);
                     me.scene.add(me.brain);
-        
+
                     me.animate();
-        
+
                     resolve();
                 };
                 oReq.onerror=function() {

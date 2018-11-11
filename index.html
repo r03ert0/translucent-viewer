@@ -6,35 +6,35 @@
 <meta name='viewport' content='width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0'>
 <style>
 #container {
-	background-color: #bbb;
-	width:640px;
-	height:640px;
+    background-color: #bbb;
+    width:640px;
+    height:640px;
 }
 </style>
 </head>
 
 <body>
 <div id='info'>
-	<div class='controls'>
-		<input type='file' id='file' name='files[]'/><br />
-		<input type='checkbox' id='showBrain' value='checked'/> Show brain<br />
-		<table>
-		<tr>
-		<td>
+    <div class='controls'>
+        <input type='file' id='file' name='files[]'/><br />
+        <input type='checkbox' id='showBrain' value='checked'/> Show brain<br />
+        <table>
+        <tr>
+        <td>
             Isosurface level: <br />
             Resolution:<br />
             Vertex count:<br />
             Face count:<br />
-		</td>
-		<td>
-		    <input type='range' id='level'/><span id='levelValue'></span><br />
-			<span id='resolution'>0</span><br />
-			<span id='vertcount'>0</span><br />
-			<span id='facecount'>0</span><br />
-		</td>
-		</tr>
-		</table>
-	</div>
+        </td>
+        <td>
+            <input type='range' id='level'/><span id='levelValue'></span><br />
+            <span id='resolution'>0</span><br />
+            <span id='vertcount'>0</span><br />
+            <span id='facecount'>0</span><br />
+        </td>
+        </tr>
+        </table>
+    </div>
 </div>
 <div id='container' width='640px' height='640px'></div>
 
@@ -42,7 +42,7 @@
 <script>
 
 translucentCluster.init('container')
-.then(function(){
+.then(() => {
     updateStats();
 
     // Configure file upload
@@ -62,9 +62,12 @@ function toggleBrain() {
 
 function handleFileSelect(evt) {
     var file = evt.target.files[0];
-    MRI.loadMRIFromFile(file)
-    .then(function() {
-        translucentCluster.cmap={data:MRI.mri.data, dims:MRI.mri.dim, level:0.06};
+    var m=new MRI();
+
+    m.init()
+    .then(() => {return m.loadMRIFromFile(file)})
+    .then(() => {
+        translucentCluster.cmap={data:m.data, dims:m.dim, level:0.06};
         translucentCluster.updateMesh(translucentCluster.cmap);
         translucentCluster.flagDataLoaded=true;
         updateStats();
