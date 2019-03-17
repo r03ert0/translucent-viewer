@@ -40,9 +40,9 @@
 
 <script src='translucent-cluster.js'></script>
 <script>
-
-translucentCluster.init('container')
-.then(() => {
+translucentCluster.init({
+    elemId: 'container'
+}).then(() => {
     updateStats();
 
     // Configure file upload
