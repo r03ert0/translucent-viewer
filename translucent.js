@@ -176,8 +176,8 @@ function Translucent() {
 
                         resolve();
                     };
-                    oReq.onerror=function() {
-                        console.error('ERROR');
+                    oReq.onerror=function(err) {
+                        console.error('ERROR', err);
                         reject();
                     };
                     oReq.send();
