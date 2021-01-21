@@ -42,17 +42,18 @@ function Translucent() {
                 brainColor = pars.brainColor;
             }
             var pr=new Promise(function(resolve, reject) {
+                /*
                 me.loadScript('http://localhost/libs/jquery/1.10.2/jquery.min.js',function(){return window.jQuery!=undefined})
                 .then(function(){return me.loadScript('http://localhost/libs/three.js/98/three.min.js')},function(){return window.THREE!=undefined})
                 .then(function(){return me.loadScript('http://localhost/libs/three.js/98/SubdivisionModifier.js')},function(){return window.THREE.SubdivisionModifier!=undefined})
-//                .then(function(){return me.loadScript('http://localhost/libs/three.js/98/OrbitControls.js')},function(){return window.THREE.OrbitControls!=undefined})
-//                .then(function(){return me.loadScript('http://localhost/libs/three.js/98/TrackballControls.js')},function(){return window.THREE.TrackballControls!=undefined})
+                .then(function(){return me.loadScript('http://localhost/libs/three.js/98/OrbitControls.js')},function(){return window.THREE.OrbitControls!=undefined})
+                .then(function(){return me.loadScript('http://localhost/libs/three.js/98/TrackballControls.js')},function(){return window.THREE.TrackballControls!=undefined})
                 .then(function(){return me.loadScript('https://cdn.rawgit.com/mrdoob/three.js/r98/examples/js/controls/TrackballControls.js')},function(){return window.THREE.TrackballControls!=undefined})
                 .then(function(){return me.loadScript('http://localhost/libs/three.js/98/PLYLoader.js')},function(){return window.THREE.PLYLoader!=undefined})
                 .then(function(){return me.loadScript('http://localhost/libs/pako/0.2.5/pako.min.js')},function(){return window.pako!=undefined})
                 .then(function(){return me.loadScript('http://localhost/structjs/struct.js')},function(){return window.Struct!=undefined})
                 .then(function(){return me.loadScript('http://localhost/mrijs/mri.js')},function(){return window.MRI!=undefined})
-                /*
+                */
                 me.loadScript('https://cdnjs.cloudflare.com/ajax/libs/jquery/1.10.2/jquery.min.js',function(){return window.jQuery!=undefined})
                 .then(function(){return me.loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/98/three.min.js')},function(){return window.THREE!=undefined})
                 .then(function(){return me.loadScript('https://cdn.rawgit.com/mrdoob/three.js/r98/examples/js/modifiers/SubdivisionModifier.js')},function(){return window.THREE.SubdivisionModifier!=undefined})
@@ -61,7 +62,6 @@ function Translucent() {
                 .then(function(){return me.loadScript('https://cdnjs.cloudflare.com/ajax/libs/pako/1.0.5/pako.min.js')},function(){return window.pako!=undefined})
                 .then(function(){return me.loadScript('https://cdn.rawgit.com/r03ert0/structjs/v0.0.1/struct.js')},function(){return window.Struct!=undefined})
                 .then(function(){return me.loadScript('https://cdn.rawgit.com/r03ert0/mrijs/v0.0.2/mri.js')},function(){return window.MRI!=undefined})
-                */
                 .then(async () => {
                     // init renderer
                     me.renderer = new THREE.WebGLRenderer({
