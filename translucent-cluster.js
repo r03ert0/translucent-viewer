@@ -247,7 +247,7 @@ function TranslucentCluster() {
             me.tr = new Translucent();
             await me.tr.init(pars);
             me.configureCubeEdges();
-//            await me.createTestData('http://localhost/translucent-viewer/demo-data/1.average-phir.nii.gz');
+            await me.createTestData('demo-data/1.average-phir.nii.gz');
         }
     };
     return me;
