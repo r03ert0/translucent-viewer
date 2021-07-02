@@ -111,7 +111,7 @@ function Translucent() {
 
                     // add the translucent brain mesh
                     var oReq = new XMLHttpRequest();
-                    oReq.open('GET', 'http://localhost/translucent-viewer/lrh3.ply', true);
+                    oReq.open('GET', 'lrh3.ply', true);
                     oReq.responseType='text';
                     oReq.onload = function(oEvent) {
                         var tmp=this.response;
