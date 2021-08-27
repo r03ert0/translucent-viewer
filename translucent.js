@@ -63,7 +63,7 @@ const _loadAllScripts = async () => {
 };
 
 // eslint-disable-next-line max-statements
-const _initRender = ({backgroundColor, alpha, elemId, brainColor}) => {
+const _initRender = ({assetsPath, backgroundColor, alpha, elemId, brainColor}) => {
   // init renderer
   const renderer = new THREE.WebGLRenderer({
     alpha: true,
@@ -115,7 +115,7 @@ const _initRender = ({backgroundColor, alpha, elemId, brainColor}) => {
 
   // add the translucent brain mesh
   var oReq = new XMLHttpRequest();
-  oReq.open('GET', './lrh3.ply', true);
+  oReq.open('GET', assetsPath + '/lrh3.ply', true);
   oReq.responseType='text';
   // eslint-disable-next-line max-statements
   oReq.onload = function() {
@@ -177,13 +177,20 @@ const _animate = (scene, renderer, cameraControls, camera) => {
   _render(scene, renderer, cameraControls, camera);
 };
 export default class Translucent {
-  constructor ({elemId="", backgroundColor=0, alpha=1, brainColor='white'}) {
+  constructor ({
+    elemId="",
+    assetsPath="./",
+    backgroundColor=0,
+    alpha=1,
+    brainColor='white'
+  }) {
     this.scene = null;
     this.renderer = null;
     this.camera = null;
     this.cameraControls = null;
     this.brain = null;
     this.elemId = elemId;
+    this.assetsPath = assetsPath;
     this.backgroundColor = backgroundColor;
     this.alpha = alpha;
     this.brainColor = brainColor;
@@ -193,6 +200,7 @@ export default class Translucent {
     console.log("init tr");
     await _loadAllScripts();
     ([this.scene, this.renderer, this.camera, this.cameraControls] = _initRender({
+      assetsPath: this.assetsPath,
       elemId: this.elemId,
       backgroundColor: this.backgroundColor,
       alpha: this.alpha,

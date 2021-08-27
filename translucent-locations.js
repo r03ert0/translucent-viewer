@@ -19,7 +19,8 @@ const renderLocations = (scene, locations) => {
 };
 
 export default class TranslucentLocations {
-  constructor (pars) {
+  constructor (pars = {assetsPath: "./"}) {
+    this.assetsPath = pars.assetsPath;
     this.locations = pars.locations;
     this.tr = new Translucent(pars);
   }

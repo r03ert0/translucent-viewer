@@ -123,7 +123,8 @@ const _drawResult = (result, self) => {
 };
 
 export default class TranslucentCluster {
-  constructor (pars) {
+  constructor (pars = {assetsPath: "./"}) {
+    this.assetsPath = pars.assetsPath;
     this.cluster = {
       vertices: [],
       faces: []
@@ -135,7 +136,7 @@ export default class TranslucentCluster {
     this.surfacemesh = null;
 
     this.tr = new Translucent(pars);
-    this.snw = new Worker("./surfacenets.worker.js", {type: "module"});
+    this.snw = new Worker(this.assetsPath + "surfacenets.worker.js", {type: "module"});
   }
 
   updateMesh (field) {
@@ -186,7 +187,7 @@ export default class TranslucentCluster {
 
   async init () {
     await this.tr.init();
-    await this.createTestData('./demo-data/1.average-phir.nii.gz');
+    await this.createTestData(this.assetsPath + 'demo-data/1.average-phir.nii.gz');
 
     this.snw.addEventListener('message', (event) => {
       const {vertices, faces} = event.data;

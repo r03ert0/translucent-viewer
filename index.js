@@ -1,7 +1,10 @@
 /* globals MRI */
 import TranslucentCluster from "./translucent-cluster.js";
 
-const trc = new TranslucentCluster({elemId: 'container'});
+const trc = new TranslucentCluster({
+  elemId: 'container',
+  assetsPath: './'
+});
 
 const updateStats = () => {
   //Update statistics
