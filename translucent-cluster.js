@@ -124,7 +124,7 @@ const _drawResult = (result, self) => {
 
 export default class TranslucentCluster {
   constructor (pars = {assetsPath: "./"}) {
-    this.assetsPath = assetsPath;
+    this.assetsPath = pars.assetsPath;
     this.cluster = {
       vertices: [],
       faces: []
