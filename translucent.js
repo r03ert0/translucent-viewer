@@ -1,200 +1,203 @@
-'use strict';
+/* globals THREE */
 
-function Translucent() {
-    var me = {
-        brain: null,
-        scene: null,
-        renderer: null,
-        composer: null,
-        camera:null,
-        cameraControl: null,
-        light: null,
-        loadScript: function loadScript(path, testScriptPresent) {
-            var pr = new Promise(function(resolve, reject) {
-                if(testScriptPresent && testScriptPresent()) {
-                    console.log("[loadScript] Script",path,"already present, not loading it again");
-                    resolve();
-                }
-                var s = document.createElement("script");
-                s.src = path;
-                s.onload=function () {
-                    document.body.appendChild(s);
-                    console.log("Loaded",path);
-                    resolve();
-                };
-                s.onerror=function() {
-                    console.error('ERROR');
-                    reject();
-                };
-                document.body.appendChild(s);
-            });
-            return pr;
-        },
-        // init the scene
-        init: async function init(pars) {
-            var {elemId} = pars;
-            let backgroundColor = 0xffffff;
-            let brainColor = 'black';
-            if(typeof pars.backgroundColor !== 'undefined') {
-                backgroundColor = pars.backgroundColor;
-            }
-            if(typeof pars.brainColor !== 'undefined') {
-                brainColor = pars.brainColor;
-            }
-            var pr=new Promise(function(resolve, reject) {
-                me.loadScript('http://localhost/libs/jquery/1.10.2/jquery.min.js',function(){return window.jQuery!=undefined})
-                .then(function(){return me.loadScript('http://localhost/libs/three.js/98/three.min.js')},function(){return window.THREE!=undefined})
-                .then(function(){return me.loadScript('http://localhost/libs/three.js/98/SubdivisionModifier.js')},function(){return window.THREE.SubdivisionModifier!=undefined})
-//                .then(function(){return me.loadScript('http://localhost/libs/three.js/98/OrbitControls.js')},function(){return window.THREE.OrbitControls!=undefined})
-//                .then(function(){return me.loadScript('http://localhost/libs/three.js/98/TrackballControls.js')},function(){return window.THREE.TrackballControls!=undefined})
-                .then(function(){return me.loadScript('https://cdn.rawgit.com/mrdoob/three.js/r98/examples/js/controls/TrackballControls.js')},function(){return window.THREE.TrackballControls!=undefined})
-                .then(function(){return me.loadScript('http://localhost/libs/three.js/98/PLYLoader.js')},function(){return window.THREE.PLYLoader!=undefined})
-                .then(function(){return me.loadScript('http://localhost/libs/pako/0.2.5/pako.min.js')},function(){return window.pako!=undefined})
-                .then(function(){return me.loadScript('http://localhost/structjs/struct.js')},function(){return window.Struct!=undefined})
-                .then(function(){return me.loadScript('http://localhost/mrijs/mri.js')},function(){return window.MRI!=undefined})
-                /*
-                me.loadScript('https://cdnjs.cloudflare.com/ajax/libs/jquery/1.10.2/jquery.min.js',function(){return window.jQuery!=undefined})
-                .then(function(){return me.loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/98/three.min.js')},function(){return window.THREE!=undefined})
-                .then(function(){return me.loadScript('https://cdn.rawgit.com/mrdoob/three.js/r98/examples/js/modifiers/SubdivisionModifier.js')},function(){return window.THREE.SubdivisionModifier!=undefined})
-                .then(function(){return me.loadScript('https://cdn.rawgit.com/mrdoob/three.js/r98/examples/js/controls/TrackballControls.js')},function(){return window.THREE.TrackballControls!=undefined})
-                .then(function(){return me.loadScript('https://cdn.rawgit.com/mrdoob/three.js/r98/examples/js/loaders/PLYLoader.js')},function(){return window.THREE.PLYLoader!=undefined})
-                .then(function(){return me.loadScript('https://cdnjs.cloudflare.com/ajax/libs/pako/1.0.5/pako.min.js')},function(){return window.pako!=undefined})
-                .then(function(){return me.loadScript('https://cdn.rawgit.com/r03ert0/structjs/v0.0.1/struct.js')},function(){return window.Struct!=undefined})
-                .then(function(){return me.loadScript('https://cdn.rawgit.com/r03ert0/mrijs/v0.0.2/mri.js')},function(){return window.MRI!=undefined})
-                */
-                .then(async () => {
-                    // init renderer
-                    me.renderer = new THREE.WebGLRenderer({
-                        antialias: true, // to get smoother output
-                        preserveDrawingBuffer: true // to allow screenshot
-                    });
-                    me.renderer.setPixelRatio( window.devicePixelRatio );
-                    me.renderer.setClearColor( backgroundColor, 1 );
-                    var width=$('#'+elemId).width();
-                    var height=$('#'+elemId).height();
-                    me.renderer.setSize(width,height);
-                    $('#'+elemId).get(0).appendChild(me.renderer.domElement);
+const vertexShader = `
+varying vec3 vVertexWorldPosition;
+varying vec3 vVertexNormal;
+void main(){
+  vVertexNormal = normalize(normalMatrix * normal);
+  vVertexWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}`;
+const fragmentShader = `
+uniform vec3 glowColor;
+uniform float coeficient;
+uniform float power;
+varying vec3 vVertexNormal;
+varying vec3 vVertexWorldPosition;
+varying vec4 vFragColor;
+void main(){
+  vec3 worldCameraToVertex= vVertexWorldPosition - cameraPosition;
+  vec3 viewCameraToVertex = (viewMatrix * vec4(worldCameraToVertex, 0.0)).xyz;
+  viewCameraToVertex = normalize(viewCameraToVertex);
+  float intensity = pow(coeficient+dot(vVertexNormal, viewCameraToVertex), power);
+  gl_FragColor = vec4(glowColor*intensity, intensity);
+}`;
 
-                    // create a scene
-                    me.scene = new THREE.Scene();
-
-                    // add a camera to the scene
-                    me.camera = new THREE.PerspectiveCamera(35, width / height,10, 100 );
-                    me.camera.position.set(0, 0, 40);
-                    me.scene.add(me.camera);
-
-                    // add a trackball camera contol
-//                  me.cameraControls = new THREE.OrbitControls( me.camera, document.getElementById(elemId) )
-                    me.cameraControls = new THREE.TrackballControls( me.camera, document.getElementById(elemId) )
-                    me.cameraControls.rotateSpeed=10;
-
-/*
-                    me.cameraControls.addEventListener('mousewheel', () => {console.log('mousewheel');});//me.cameraControls.update);
-                    me.cameraControls.addEventListener('mousemove', () => {console.log('mousemove');});//me.cameraControls.update()});
-                    me.cameraControls.addEventListener('mouseup', () => {console.log('mouseup');});//me.cameraControls.update);
-
-                    me.cameraControls.addEventListener('mousewheel', () => {me.cameraControls.update()});
-                    me.cameraControls.addEventListener('mousemove', () => {me.cameraControls.update()});
-                    me.cameraControls.addEventListener('mouseup', () => {me.cameraControls.update()});
-*/
-
-                    // add light
-                    me.light = new THREE.AmbientLight( Math.random() * 0xffffff );
-                    me.scene.add( me.light );
-                    me.light = new THREE.PointLight( 0xffffff,2,80 );
-                    me.light.position.copy( me.camera.position );
-                    me.scene.add( me.light );
-                    me.cameraControls.addEventListener('change', () => {
-                        me.light.position.copy( me.camera.position );
-                        //me.render();
-                    } );
-
-                    // add the translucent brain mesh
-                    var oReq = new XMLHttpRequest();
-                    oReq.open('GET', 'http://localhost/translucent-viewer/lrh3.ply', true);
-                    oReq.responseType='text';
-                    oReq.onload = function(oEvent) {
-                        var tmp=this.response;
-                        var buffergeometry=new THREE.PLYLoader().parse(tmp);
-                        var geometry = new THREE.Geometry().fromBufferGeometry(buffergeometry);
-                        geometry.mergeVertices();
-                        geometry.sourceType = 'ply';
-
-                        geometry.computeFaceNormals();
-                        geometry.computeVertexNormals();
-
-                        // translucent shader
-                        var material = new THREE.ShaderMaterial({
-                            uniforms: { 
-                                coeficient: {type: 'f', value: 1.0},
-                                power: {type: 'f', value: 2},
-                                glowColor: {type: 'c', value: new THREE.Color(brainColor)},
-                            },
-                            vertexShader: [ 'varying vec3 vVertexWorldPosition;',
-                                                'varying vec3 vVertexNormal;',
-                                                'void main(){',
-                                                '  vVertexNormal = normalize(normalMatrix * normal);',
-                                                '  vVertexWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;',
-                                                '  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);',
-                                                '}',
-                                                ].join('\n'),
-                            fragmentShader: [ 'uniform vec3 glowColor;',
-                                                'uniform float coeficient;',
-                                                'uniform float power;',
-                                                'varying vec3 vVertexNormal;',
-                                                'varying vec3 vVertexWorldPosition;',
-                                                'varying vec4 vFragColor;',
-                                                'void main(){',
-                                                '  vec3 worldCameraToVertex= vVertexWorldPosition - cameraPosition;',
-                                                '  vec3 viewCameraToVertex = (viewMatrix * vec4(worldCameraToVertex, 0.0)).xyz;',
-                                                '  viewCameraToVertex = normalize(viewCameraToVertex);',
-                                                '  float intensity = pow(coeficient+dot(vVertexNormal, viewCameraToVertex), power);',
-                                                '  gl_FragColor = vec4(glowColor*intensity, intensity);',
-                                                '}',
-                                            ].join('\n'),
-                            transparent: true,
-                            depthWrite: false,
-                        });
-                        var modifier = new THREE.SubdivisionModifier(1);
-                        geometry = modifier.modify(geometry);
-
-                        // hack
-                        for(var i=0;i<geometry.vertices.length;i++)
-                        {
-                            geometry.vertices[i].x*=0.14;
-                            geometry.vertices[i].y*=0.14;
-                            geometry.vertices[i].z*=0.14;
-                            geometry.vertices[i].y+=3;
-                            geometry.vertices[i].z-=2;
-                        }
-
-                        me.brain=new THREE.Mesh(geometry,material);
-                        me.scene.add(me.brain);
-
-                        me.animate();
-                        //me.render();
-
-                        resolve();
-                    };
-                    oReq.onerror=function(err) {
-                        console.error('ERROR', err);
-                        reject();
-                    };
-                    oReq.send();
-                });
-            });
-            return pr;
-        },
-        // animation loop
-        animate: function animate() {
-            requestAnimationFrame( me.animate );
-            me.render();
-        },
-        // render the scene
-        render: function render() {
-            me.cameraControls.update();
-            me.renderer.render( me.scene, me.camera );
-        }
+const loadScript = async (path, testScriptPresent) => {
+  await new Promise((resolve, reject) => {
+    if(testScriptPresent && testScriptPresent()) {
+      console.log("[loadScript] Script", path, "already present, not loading it again");
+      resolve();
+    }
+    var s = document.createElement("script");
+    s.src = path;
+    s.onload=function () {
+      document.body.appendChild(s);
+      console.log("Loaded", path);
+      resolve();
     };
-    return me;
+    s.onerror=function(err) {
+      console.error('ERROR');
+      reject(err);
+    };
+    document.body.appendChild(s);
+  });
+};
+
+const _loadAllScripts = async () => {
+  // await loadScript('http://localhost/libs/three.js/r119/build/three.min.js', () => typeof window.THREE !== "undefined");
+  // await loadScript('http://localhost/libs/three.js/r119/examples/js/modifiers/SubdivisionModifier.js', () => typeof window.THREE.SubdivisionModifier !== "undefined");
+  // await loadScript('http://localhost/libs/three.js/r119/examples/js/controls/TrackballControls.js', () => typeof window.THREE.TrackballControls !== "undefined");
+  // await loadScript('http://localhost/libs/three.js/r119/examples/js/loaders/PLYLoader.js', () => typeof window.THREE.PLYLoader !== "undefined");
+  // await loadScript('http://localhost/libs/pako/0.2.5/pako.min.js', () => typeof window.pako !== "undefined");
+  // await loadScript('http://localhost/structjs/struct.js', () => typeof window.Struct !== "undefined");
+  // await loadScript('http://localhost/mrijs-neuroanatomy/mri.js', () => typeof window.MRI !== "undefined");
+
+  await loadScript('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r119/build/three.min.js', () => typeof window.THREE !== "undefined");
+  await loadScript('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r119/examples/js/modifiers/SubdivisionModifier.js', () => typeof window.THREE.SubdivisionModifier !== "undefined");
+  await loadScript('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r119/examples/js/controls/TrackballControls.js', () => typeof window.THREE.TrackballControls !== "undefined");
+  await loadScript('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r119/examples/js/loaders/PLYLoader.js', () => typeof window.THREE.PLYLoader !== "undefined");
+  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pako/1.0.5/pako.min.js', () => typeof window.pako !== "undefined");
+  await loadScript('https://cdn.rawgit.com/r03ert0/structjs/v0.0.1/struct.js', () => typeof window.Struct !== "undefined");
+  await loadScript('https://cdn.jsdelivr.net/gh/neuroanatomy/mrijs/mri.js', () => typeof window.MRI !== "undefined");
+};
+
+// eslint-disable-next-line max-statements
+const _initRender = ({backgroundColor, alpha, elemId, brainColor}) => {
+  // init renderer
+  const renderer = new THREE.WebGLRenderer({
+    alpha: true,
+    antialias: false, // to get smoother output
+    preserveDrawingBuffer: false // to allow screenshot
+  });
+  renderer.setPixelRatio( window.devicePixelRatio );
+  renderer.setClearColor( backgroundColor, alpha );
+  const width=document.querySelector(`#${elemId}`).clientWidth;
+  const height=document.querySelector(`#${elemId}`).clientHeight;
+  renderer.setSize(width, height);
+  document.querySelector(`#${elemId}`).appendChild(renderer.domElement);
+
+  // create a scene
+  const scene = new THREE.Scene();
+  scene.background = null;
+
+  // add a camera to the scene
+  const camera = new THREE.PerspectiveCamera(35, width / height, 10, 500 );
+  camera.position.set(0, 0, 40);
+  scene.add(camera);
+
+  // add a trackball camera contol
+  // cameraControls = new THREE.OrbitControls( camera, document.getElementById(elemId) )
+  const cameraControls = new THREE.TrackballControls( camera, document.getElementById(elemId) );
+  cameraControls.rotateSpeed=10;
+
+  /*
+    cameraControls.addEventListener('mousewheel', () => {console.log('mousewheel');});//cameraControls.update);
+    cameraControls.addEventListener('mousemove', () => {console.log('mousemove');});//cameraControls.update()});
+    cameraControls.addEventListener('mouseup', () => {console.log('mouseup');});//cameraControls.update);
+
+    cameraControls.addEventListener('mousewheel', () => {cameraControls.update()});
+    cameraControls.addEventListener('mousemove', () => {cameraControls.update()});
+    cameraControls.addEventListener('mouseup', () => {cameraControls.update()});
+  */
+
+  // add lights
+  let light = new THREE.AmbientLight( Math.random() * 0xffffff );
+  scene.add( light );
+
+  light = new THREE.PointLight( 0xffffff, 2, 80 );
+  light.position.copy( camera.position );
+  scene.add( light );
+  cameraControls.addEventListener('change', () => {
+    light.position.copy( camera.position );
+    //render();
+  } );
+
+  // add the translucent brain mesh
+  var oReq = new XMLHttpRequest();
+  oReq.open('GET', './lrh3.ply', true);
+  oReq.responseType='text';
+  // eslint-disable-next-line max-statements
+  oReq.onload = function() {
+    var tmp=this.response;
+    var buffergeometry=new THREE.PLYLoader().parse(tmp);
+    var geometry = new THREE.Geometry().fromBufferGeometry(buffergeometry);
+    geometry.mergeVertices();
+    geometry.sourceType = 'ply';
+
+    geometry.computeFaceNormals();
+    geometry.computeVertexNormals();
+
+    // translucent shader
+    var material = new THREE.ShaderMaterial({
+      uniforms: {
+        coeficient: {type: 'f', value: 1.0},
+        power: {type: 'f', value: 2},
+        glowColor: {type: 'c', value: new THREE.Color(brainColor)}
+      },
+      vertexShader,
+      fragmentShader,
+      transparent: true,
+      depthWrite: false
+    });
+    var modifier = new THREE.SubdivisionModifier(1);
+    geometry = modifier.modify(geometry);
+
+    // hack
+    for(var i=0; i<geometry.vertices.length; i++) {
+      geometry.vertices[i].x*=0.14;
+      geometry.vertices[i].y*=0.14;
+      geometry.vertices[i].z*=0.14;
+      geometry.vertices[i].y+=3;
+      geometry.vertices[i].z-=2;
+    }
+
+    const brain=new THREE.Mesh(geometry, material);
+    scene.add(brain);
+    //render();
+  };
+
+  oReq.onerror=function(err) {
+    console.error('ERROR', err);
+    throw new Error("Unable to initialise Translucent");
+  };
+
+  oReq.send();
+
+  return [scene, renderer, camera, cameraControls];
+};
+
+const _render = (scene, renderer, cameraControls, camera) => {
+  cameraControls.update();
+  renderer.render( scene, camera );
+};
+
+const _animate = (scene, renderer, cameraControls, camera) => {
+  requestAnimationFrame( () => { _animate(scene, renderer, cameraControls, camera); } );
+  _render(scene, renderer, cameraControls, camera);
+};
+export default class Translucent {
+  constructor ({elemId="", backgroundColor=0, alpha=1, brainColor='white'}) {
+    this.scene = null;
+    this.renderer = null;
+    this.camera = null;
+    this.cameraControls = null;
+    this.brain = null;
+    this.elemId = elemId;
+    this.backgroundColor = backgroundColor;
+    this.alpha = alpha;
+    this.brainColor = brainColor;
+  }
+
+  async init () {
+    console.log("init tr");
+    await _loadAllScripts();
+    ([this.scene, this.renderer, this.camera, this.cameraControls] = _initRender({
+      elemId: this.elemId,
+      backgroundColor: this.backgroundColor,
+      alpha: this.alpha,
+      brainColor: this.brainColor
+    }));
+    _animate(this.scene, this.renderer, this.cameraControls, this.camera);
+  }
 }

@@ -1,0 +1,23 @@
+{
+  "name": "translucent-viewer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "surfacenets.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/r03ert0/translucent-viewer.git"
+  },
+  "keywords": [],
+  "author": "Roberto Toro <rto@braincatalogue.org> (https://neuroanatomy.github.io)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/r03ert0/translucent-viewer/issues"
+  },
+  "homepage": "https://github.com/r03ert0/translucent-viewer#readme",
+  "devDependencies": {
+    "eslint-config-naat": "git+https://github.com/neuroanatomy/eslint-config-naat.git"
+  }
+}
